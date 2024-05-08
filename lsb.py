@@ -7,37 +7,37 @@ from PIL import Image
 
 from crypt import AESCipher
 
-# Decompose a binary file into an array of bits
 def decompose(data):
-	v = []
-	
-	# Pack file len in 4 bytes
-	fSize = len(data)
-	bytes = [ord(b) for b in struct.pack("i", fSize)]
-	
-	bytes += [ord(b) for b in data]
+    v = []
 
-	for b in bytes:
-		for i in range(7, -1, -1):
-			v.append((b >> i) & 0x1)
+    # Pack file len in 4 bytes
+    fSize = len(data)
+    bytes = struct.pack("i", fSize)  # No need to convert bytes to ints
 
-	return v
+    bytes += data
+
+    for b in bytes:
+        for i in range(7, -1, -1):
+            v.append((b >> i) & 0x1)
+
+    return v
+
 
 # Assemble an array of bits into a binary file
 def assemble(v):    
-	bytes = ""
+    bytes = b''  # Use bytes() for Python 3
 
-	length = len(v)
-	for idx in range(0, len(v)/8):
-		byte = 0
-		for i in range(0, 8):
-			if (idx*8+i < length):
-				byte = (byte<<1) + v[idx*8+i]                
-		bytes = bytes + chr(byte)
+    length = len(v)
+    for idx in range(0, int(len(v) / 8)):
+        byte = 0
+        for i in range(0, 8):
+            if (idx * 8 + i < length):
+                byte = (byte << 1) + v[idx * 8 + i]
+        bytes += byte.to_bytes(1, byteorder='little')  # Use bytes([byte]) for Python 3
 
-	payload_size = struct.unpack("i", bytes[:4])[0]
+    payload_size = struct.unpack("i", bytes[:4])[0]  # No need for .encode()
 
-	return bytes[4: payload_size + 4]
+    return bytes[4: payload_size + 4]
 
 # Set the i-th bit of v to x
 def set_bit(n, i, x):
@@ -53,14 +53,14 @@ def embed(imgFile, payload, password):
 	img = Image.open(imgFile)
 	(width, height) = img.size
 	conv = img.convert("RGBA").getdata()
-	print "[*] Input image size: %dx%d pixels." % (width, height)
+	print("[*] Input image size: %dx%d pixels." % (width, height))
 	max_size = width*height*3.0/8/1024		# max payload size
-	print "[*] Usable payload size: %.2f KB." % (max_size)
+	print("[*] Usable payload size: %.2f KB." % (max_size))
 
 	f = open(payload, "rb")
 	data = f.read()
 	f.close()
-	print "[+] Payload size: %.3f KB " % (len(data)/1024.0)
+	print("[+] Payload size: %.3f KB " % (len(data)/1024.0))
 		
 	# Encypt
 	cipher = AESCipher(password)
@@ -74,9 +74,9 @@ def embed(imgFile, payload, password):
 		v.append(0)
 
 	payload_size = len(v)/8/1024.0
-	print "[+] Encrypted payload size: %.3f KB " % (payload_size)
+	print("[+] Encrypted payload size: %.3f KB " % (payload_size))
 	if (payload_size > max_size - 4):
-		print "[-] Cannot embed. File too large"
+		print("[-] Cannot embed. File too large")
 		sys.exit()
 		
 	# Create output image
@@ -97,7 +97,7 @@ def embed(imgFile, payload, password):
     
 	steg_img.save(imgFile + "-stego.png", "PNG")
 	
-	print "[+] %s embedded successfully!" % payload
+	print("[+] %s embedded successfully!" % payload)
 
 # Extract data embedded into LSB of the input file
 def extract(in_file, out_file, password):
@@ -105,7 +105,7 @@ def extract(in_file, out_file, password):
 	img = Image.open(in_file)
 	(width, height) = img.size
 	conv = img.convert("RGBA").getdata()
-	print "[+] Image size: %dx%d pixels." % (width, height)
+	print("[+] Image size: %dx%d pixels." % (width, height))
 
 	# Extract LSBs
 	v = []
@@ -127,7 +127,7 @@ def extract(in_file, out_file, password):
 	out_f.write(data_dec)
 	out_f.close()
 	
-	print "[+] Written extracted data to %s." % out_file
+	print("[+] Written extracted data to %s." % out_file)
 
 # Statistical analysis of an image to detect LSB steganography
 def analyse(in_file):
@@ -140,7 +140,7 @@ def analyse(in_file):
 	BS = 100	# Block size 
 	img = Image.open(in_file)
 	(width, height) = img.size
-	print "[+] Image size: %dx%d pixels." % (width, height)
+	print("[+] Image size: %dx%d pixels." % (width, height))
 	conv = img.convert("RGBA").getdata()
 
 	# Extract LSBs
@@ -177,11 +177,11 @@ def analyse(in_file):
 	plt.show()
 
 def usage(progName):
-	print "LSB steganogprahy. Hide files within least significant bits of images.\n"
-	print "Usage:"
-	print "  %s hide <img_file> <payload_file> <password>" % progName
-	print "  %s extract <stego_file> <out_file> <password>" % progName
-	print "  %s analyse <stego_file>" % progName
+	print("LSB steganogprahy. Hide files within least significant bits of images.\n")
+	print("Usage:")
+	print("  %s hide <img_file> <payload_file> <password>" % progName)
+	print("  %s extract <stego_file> <out_file> <password>" % progName)
+	print("  %s analyse <stego_file>" % progName)
 	sys.exit()
 	
 if __name__ == "__main__":
@@ -195,5 +195,5 @@ if __name__ == "__main__":
 	elif sys.argv[1] == "analyse":
 		analyse(sys.argv[2])
 	else:
-		print "[-] Invalid operation specified"
+		print("[-] Invalid operation specified")
 		

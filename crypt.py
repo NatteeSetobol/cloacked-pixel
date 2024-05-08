@@ -19,12 +19,14 @@ class AESCipher:
         return iv + cipher.encrypt(raw)
 
     def decrypt(self, enc):
-        iv = enc[:AES.block_size]
+        if isinstance(enc, str):
+            enc = enc.encode('utf-8')  # Use appropriate encoding here
+        iv = bytes(enc[:AES.block_size])
         cipher = AES.new(self.key, AES.MODE_CBC, iv)
         return self._unpad(cipher.decrypt(enc[AES.block_size:]))
 
     def _pad(self, s):
-        return s + (self.bs - len(s) % self.bs) * chr(self.bs - len(s) % self.bs)
+        return s + (self.bs - len(s) % self.bs) * chr(self.bs - len(s) % self.bs).encode('utf-8')
 
     @staticmethod
     def _unpad(s):
